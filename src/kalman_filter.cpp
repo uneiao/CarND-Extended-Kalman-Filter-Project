@@ -1,5 +1,6 @@
 #include "kalman_filter.h"
 #include <algorithm>
+#include <math.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -43,7 +44,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   float vy = x_[3];
 
   px = fabs(px) < 0.0001 ? 0.0001 : px;
-  float phi = atan(py / px);
+  float phi = atan2(py, px);
 
   float rho = sqrt(px * px + py * py);
   rho = std::max(fabs(rho), 0.0001);
@@ -51,7 +52,14 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 
   VectorXd h = VectorXd(3);
   h << rho, phi, rho_dot;
-  EstimateUpdate(z - h);
+  VectorXd y = z - h;
+  //normalizing angle
+  while (y[1] >  M_PI)
+    y[1] -= 2 * M_PI;
+
+  while (y[1] < -M_PI)
+    y[1] += 2 * M_PI;
+  EstimateUpdate(y);
 }
 
 void KalmanFilter::EstimateUpdate(const VectorXd &y) {
